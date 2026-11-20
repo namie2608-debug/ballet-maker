@@ -1,968 +1,564 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>芭蕾手位與視線串聯模擬器｜表演藝術互動課堂</title>
-    <!-- 引入 Tailwind CSS 與 Google Fonts (Noto Sans TC) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-        }
-        /* 自訂平滑過渡與發光效果 */
-        .step-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .step-card.active {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px -6px rgba(79, 70, 229, 0.25);
-            border-color: #4f46e5;
-            background-color: #ffffff;
-        }
-        canvas {
-            touch-action: manipulation;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>芭蕾手位串聯模擬器｜表演藝術互動教具(芭蕾)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+    body {
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    }
+    .beat-active {
+      transform: scale(1.22);
+      box-shadow: 0 0 18px rgba(244, 63, 94, 0.75);
+    }
+  </style>
 </head>
-<body class="min-h-screen text-slate-800 flex flex-col">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
 
-    <!-- 頂部導覽列 -->
-    <header class="bg-white/80 backdrop-blur-md border-b border-indigo-100 sticky top-0 z-20">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md">
-                    🩰
-                </div>
-                <div>
-                    <h1 class="text-lg sm:text-xl font-black text-slate-900 tracking-tight">芭蕾手位與視線串聯模擬器</h1>
-                    <p class="text-xs text-slate-500">表演藝術互動教具(芭蕾)｜Port de bras 動作編排與頭向觀察</p>
-                </div>
-            </div>
-            <!-- 快捷功能鈕 -->
-            <div class="flex items-center gap-2">
-                <button id="btnMusicToggle" class="px-3 py-2 text-xs sm:text-sm font-bold rounded-xl bg-emerald-100 text-emerald-800 hover:bg-emerald-200 active:scale-95 transition flex items-center gap-1">
-                    🔊 進行曲音樂：開
-                </button>
-                <button id="btnRandom" class="px-3 py-2 text-xs sm:text-sm font-bold rounded-xl bg-amber-100 text-amber-800 hover:bg-amber-200 active:scale-95 transition flex items-center gap-1">
-                    🎲 隨機抽籤編舞
-                </button>
-                <button id="btnPresetNutcracker" class="px-3 py-2 text-xs sm:text-sm font-bold rounded-xl bg-rose-100 text-rose-800 hover:bg-rose-200 active:scale-95 transition flex items-center gap-1">
-                    👑 克拉拉示範序列
-                </button>
-            </div>
+  <!-- 頂部導覽列 -->
+  <header class="bg-slate-800/90 border-b border-slate-700 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 class="text-xl md:text-2xl font-black tracking-wide text-amber-400">
+        🩰 芭蕾手位串聯模擬器 <span class="text-sm font-medium text-slate-300 ml-2">表演藝術互動教具(芭蕾)</span>
+      </h1>
+      <p class="text-xs text-slate-400 mt-0.5">選擇四個芭蕾手部位置，搭配《胡桃鉗》進行曲觀察手臂流動路徑與頭部視線方向</p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span id="musicStatusBadge" class="text-xs font-bold text-emerald-300 bg-emerald-950/70 px-3.5 py-1.5 rounded-xl border border-emerald-700/60">
+        🎵 內建《胡桃鉗》士兵進行曲（march.mp3）
+      </span>
+    </div>
+  </header>
+
+  <!-- 主內容區 -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- 左側：舞者視覺模擬舞台 (7欄) -->
+    <section class="lg:col-span-7 bg-slate-800/70 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-between relative shadow-2xl">
+      
+      <!-- 頂部 4 拍節拍燈號 -->
+      <div class="w-full flex items-center justify-between bg-slate-900/80 px-4 py-3 rounded-xl border border-slate-700/80">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-slate-400">節拍指示：</span>
+          <div id="beat-1" class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-black text-sm transition-all">1</div>
+          <div id="beat-2" class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-sm transition-all">2</div>
+          <div id="beat-3" class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-sm transition-all">3</div>
+          <div id="beat-4" class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-sm transition-all">4</div>
         </div>
-    </header>
+        <div class="text-right">
+          <span id="currentPoseBadge" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full text-xs font-bold">
+            準備就緒
+          </span>
+        </div>
+      </div>
 
-    <!-- 主要內容區 -->
-    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Canvas 舞者畫布 -->
+      <div id="canvasWrapper" class="relative w-full flex justify-center my-2">
+        <canvas id="dancerCanvas" class="w-full max-w-[520px] h-[420px] rounded-xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 border border-slate-700/60"></canvas>
         
-        <!-- 左側：動態舞者視覺模擬舞台 (佔 5 欄) -->
-        <section class="lg:col-span-5 flex flex-col gap-4">
-            <div class="bg-white rounded-3xl shadow-xl border border-indigo-50 p-4 flex flex-col items-center relative overflow-hidden">
-                <!-- 舞台頂部狀態列 -->
-                <div class="w-full flex items-center justify-between mb-2 px-2">
-                    <span id="stageStepBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-sm">
-                        第 1 動作
-                    </span>
-                    <div class="flex items-center gap-2">
-                        <span id="beatNumberText" class="text-xs font-black text-indigo-700">第 1 拍</span>
-                        <div class="flex items-center gap-1.5" id="beatDots">
-                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 transition-all"></span>
-                            <span class="w-2.5 h-2.5 rounded-full bg-slate-200 transition-all"></span>
-                            <span class="w-2.5 h-2.5 rounded-full bg-slate-200 transition-all"></span>
-                            <span class="w-2.5 h-2.5 rounded-full bg-slate-200 transition-all"></span>
-                        </div>
-                    </div>
-                </div>
+        <!-- 視線方向提示浮標 -->
+        <div id="gazeLabel" class="absolute bottom-4 left-4 bg-slate-950/85 border border-amber-500/40 px-3.5 py-2 rounded-xl text-xs text-amber-300 font-bold backdrop-blur-sm">
+          👁️ 視線方向：平視正前方
+        </div>
+      </div>
 
-                <!-- 舞者畫布容器 -->
-                <div id="canvasContainer" class="w-full aspect-[4/5] max-h-[420px] rounded-2xl bg-gradient-to-b from-slate-50 to-indigo-50/50 border border-slate-100 relative flex items-center justify-center">
-                    <canvas id="dancerCanvas" class="w-full h-full block rounded-2xl"></canvas>
-                    
-                    <!-- 視線與重點浮動提示牌 -->
-                    <div class="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-sm rounded-2xl p-3 shadow-md border border-indigo-100">
-                        <div class="flex items-center justify-between mb-1">
-                            <span id="overlayPosTitle" class="font-black text-indigo-700 text-base">預備位置 (Bras bas)</span>
-                            <span id="overlayHeadDir" class="text-xs font-bold px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-800">
-                                👀 頭看：微低頭看前下方
-                            </span>
-                        </div>
-                        <p id="overlayDesc" class="text-xs text-slate-600 leading-relaxed">
-                            雙手垂於腹前抱圓，與大腿留一個半拳頭距離。
-                        </p>
-                    </div>
-                </div>
+      <!-- 播放與速度節拍調節列 -->
+      <div class="w-full bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <button id="playBtn" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition shadow-lg flex items-center gap-1.5">
+            <span>▶ 開始合拍播放</span>
+          </button>
+          <button id="stopBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold px-4 py-2.5 rounded-xl text-sm transition">
+            ⏹ 停止歸零
+          </button>
+        </div>
 
-                <!-- 播放控制列 -->
-                <div class="w-full mt-4 flex flex-col gap-2.5">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <button id="btnPlayPause" class="flex-1 py-3 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-base shadow-lg shadow-indigo-200 active:scale-95 transition flex items-center justify-center gap-2">
-                            <span id="playIcon">▶️</span> <span id="playText">開始合拍播放（進行曲）</span>
-                        </button>
-                        <button id="btnStopReset" class="py-3 px-3.5 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs sm:text-sm active:scale-95 transition">
-                            ⏹️ 歸零
-                        </button>
-                    </div>
+        <!-- 固定 BPM 150 與延遲調節 -->
+        <div class="flex flex-wrap items-center gap-2.5 text-xs">
+          <label for="bpmInput" class="flex items-center gap-1 text-slate-300">
+            <span>BPM:</span>
+            <input type="number" id="bpmInput" value="150" readonly class="w-14 bg-slate-800/90 border border-slate-600 rounded-lg px-1.5 py-1 text-center font-black text-amber-400 cursor-not-allowed" />
+          </label>
+          <label for="offsetInput" class="flex items-center gap-1 text-slate-300" title="若 march.mp3 開頭有前奏空白，可調整前奏延遲秒數">
+            <span>延遲(秒):</span>
+            <input type="number" id="offsetInput" value="0.0" step="0.1" min="0" max="10" class="w-14 bg-slate-800 border border-slate-600 rounded-lg px-1.5 py-1 text-center font-bold text-amber-400 focus:outline-none focus:border-amber-400" />
+          </label>
+        </div>
+      </div>
+    </section>
 
-                    <!-- 速度與節拍精準調節列 -->
-                    <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-100/90 rounded-2xl px-3 py-2 border border-slate-200/70">
-                        <div class="flex items-center gap-1.5">
-                            <button data-speed="0.7" class="speed-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 transition">慢速 0.7x</button>
-                            <button data-speed="1" class="speed-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-indigo-700 shadow-sm transition">原速 1.0x</button>
-                        </div>
-                        <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
-                            <label for="bpmInput" class="flex items-center gap-1">
-                                <span>BPM:</span>
-                                <input type="number" id="bpmInput" value="132" min="60" max="180" step="1" class="w-14 bg-white border border-slate-300 rounded-lg px-1.5 py-1 text-center font-black text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            </label>
-                            <label for="offsetInput" class="flex items-center gap-1" title="若 march.mp3 開頭有前奏空白，可微調延遲秒數">
-                                <span>延遲(秒):</span>
-                                <input type="number" id="offsetInput" value="0.0" min="0" max="10" step="0.1" class="w-14 bg-white border border-slate-300 rounded-lg px-1.5 py-1 text-center font-black text-amber-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            </label>
-                        </div>
-                    </div>
-                    <div id="audioSourceNotice" class="text-[11px] text-center font-medium text-emerald-700">
-                        🎵 已連結同資料夾音檔：march.mp3（若未偵測到檔案將自動啟用內建進行曲音效）
-                    </div>
-                </div>
+    <!-- 右側：四格手部位置編舞序列器 (5欄) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+      <div class="bg-slate-800/70 border border-slate-700 rounded-2xl p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-black text-white">序列編輯器（每格 4 拍）</h2>
+          <button id="randomBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+            🎲 隨機組合
+          </button>
+        </div>
+
+        <div id="slotsContainer" class="space-y-3">
+          <!-- 由 JS 動態產生 4 個位置選擇卡片 -->
+        </div>
+
+        <!-- 教學動作口訣參考卡 -->
+        <div class="mt-5 bg-slate-900/80 border border-slate-700/80 rounded-xl p-4 text-xs space-y-2 text-slate-300">
+          <div class="font-bold text-amber-400 text-sm mb-1">📌 課堂動作檢核重點：</div>
+          <p>• <strong class="text-white">預備位置</strong>：雙手在腹前抱圓，微低頭看指尖。</p>
+          <p>• <strong class="text-white">第一位置</strong>：雙手抬至胃部前方抱圓，平視正前方。</p>
+          <p>• <strong class="text-white">第二位置</strong>：雙臂向兩側展開，手肘微彎，平視前方。</p>
+          <p>• <strong class="text-white">第三位置</strong>：一手高舉過頭、一手旁側展開，<span class="text-amber-300 font-bold">頭看旁手方向</span>。</p>
+          <p>• <strong class="text-white">第四位置</strong>：一手高舉過頭、一手抱於胃前，<span class="text-amber-300 font-bold">抬頭看上手方向</span>。</p>
+          <p>• <strong class="text-white">第五位置</strong>：雙臂高舉頭頂成圓環，<span class="text-amber-300 font-bold">微抬頭看雙手指尖</span>。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 網頁下方教學單位與製作人註記 -->
+  <footer class="border-t border-slate-800 bg-slate-950/80 py-4 px-6 text-center">
+    <p class="text-xs md:text-sm font-medium text-slate-300 tracking-wide">
+      自主調節學習(NTSRL)胡桃鉗手位教材 / 新北市立中平國中 黃翊倫教師製作
+    </p>
+  </footer>
+
+  <!-- 直接綁定同資料夾的 march.mp3 -->
+  <audio id="bgMusic" src="march.mp3" preload="auto" loop></audio>
+
+  <script>
+    // 芭蕾六個手部位置與頭看方向資料庫
+    const POSES = {
+      prep: {
+        id: 'prep',
+        name: '預備位置',
+        desc: '雙臂下垂於腹前抱圓｜頭微低看指尖',
+        gazeText: '微低頭，視線注視下方雙手指尖',
+        leftElbow: [-52, 65], leftWrist: [-16, 128],
+        rightElbow: [52, 65], rightWrist: [16, 128],
+        headTurn: 0, headTilt: 0.28, gazeTarget: [0, 125]
+      },
+      first: {
+        id: 'first',
+        name: '第一位置',
+        desc: '雙手抬至胃部前方抱圓｜平視正前方',
+        gazeText: '頭擺正，視線平視正前方',
+        leftElbow: [-78, 22], leftWrist: [-18, 42],
+        rightElbow: [78, 22], rightWrist: [18, 42],
+        headTurn: 0, headTilt: 0, gazeTarget: [0, -55]
+      },
+      second: {
+        id: 'second',
+        name: '第二位置',
+        desc: '雙臂向兩側大幅展開｜平視正前方',
+        gazeText: '頭擺正，視線平視正前方',
+        leftElbow: [-95, 8], leftWrist: [-168, 22],
+        rightElbow: [95, 8], rightWrist: [168, 22],
+        headTurn: 0, headTilt: 0, gazeTarget: [0, -55]
+      },
+      third: {
+        id: 'third',
+        name: '第三位置',
+        desc: '右手高舉過頭、左手旁開｜頭看旁手方向',
+        gazeText: '頭轉向旁側，視線看往旁開的手',
+        leftElbow: [-95, 8], leftWrist: [-168, 22],
+        rightElbow: [56, -68], rightWrist: [16, -125],
+        headTurn: -0.55, headTilt: 0.05, gazeTarget: [-168, 22]
+      },
+      fourth: {
+        id: 'fourth',
+        name: '第四位置',
+        desc: '右手高舉過頭、左手抱於胃前｜頭看上手方向',
+        gazeText: '頭微轉並抬頭，視線看往高舉的上手',
+        leftElbow: [-78, 22], leftWrist: [-18, 42],
+        rightElbow: [56, -68], rightWrist: [16, -125],
+        headTurn: 0.35, headTilt: -0.35, gazeTarget: [16, -125]
+      },
+      fifth: {
+        id: 'fifth',
+        name: '第五位置',
+        desc: '雙臂高舉頭頂成圓環｜微抬頭看雙手',
+        gazeText: '微抬頭，視線看往頭頂雙手指尖',
+        leftElbow: [-56, -68], leftWrist: [-15, -126],
+        rightElbow: [56, -68], rightWrist: [15, -126],
+        headTurn: 0, headTilt: -0.38, gazeTarget: [0, -126]
+      }
+    };
+
+    const POSE_KEYS = ['prep', 'first', 'second', 'third', 'fourth', 'fifth'];
+    let sequence = ['prep', 'first', 'third', 'fifth'];
+    let isPlaying = false;
+    let activeSlot = 0;
+    let currentBeat = 1;
+    let baseBpm = 150; // 固定在 BPM 150
+    let playbackSpeed = 1.0;
+    let audioOffsetSec = 0.0;
+    let manualTimerStart = 0;
+    let pausedElapsed = 0;
+    let useFallbackSynth = false;
+    let animFrameId = null;
+
+    // Web Audio API 備援進行曲合成器（若本機預覽無 march.mp3 時自動啟用）
+    let audioCtx = null;
+    let lastSynthBeatIndex = -1;
+
+    const canvas = document.getElementById('dancerCanvas');
+    const ctx = canvas.getContext('2d');
+    const bgMusic = document.getElementById('bgMusic');
+    const musicStatusBadge = document.getElementById('musicStatusBadge');
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const bpmInput = document.getElementById('bpmInput');
+    const offsetInput = document.getElementById('offsetInput');
+    const slotsContainer = document.getElementById('slotsContainer');
+    const gazeLabel = document.getElementById('gazeLabel');
+    const currentPoseBadge = document.getElementById('currentPoseBadge');
+
+    // 響應式 Canvas 尺寸設定
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawDancer(POSES[sequence[activeSlot]], POSES[sequence[activeSlot]], 1);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // 偵測 march.mp3 載入失敗時自動切換備援合成音效
+    bgMusic.addEventListener('error', () => {
+      useFallbackSynth = true;
+      musicStatusBadge.textContent = '🎹 備援節拍音效模式（未偵測到 march.mp3）';
+      musicStatusBadge.className = 'text-xs font-bold text-amber-300 bg-amber-950/70 px-3.5 py-1.5 rounded-xl border border-amber-700/60';
+    });
+
+    function playSynthBeat(beatNum) {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioContextClass();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = beatNum === 1 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(beatNum === 1 ? 587.33 : 440, audioCtx.currentTime);
+        gain.gain.setValueAtTime(beatNum === 1 ? 0.2 : 0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.14);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch (err) {
+        // 忽略瀏覽器音效限制錯誤
+      }
+    }
+
+    // 渲染右側四格選擇器
+    function renderSlots() {
+      slotsContainer.innerHTML = '';
+      sequence.forEach((poseKey, index) => {
+        const pose = POSES[poseKey];
+        const isCurrent = activeSlot === index;
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-xl border transition-all cursor-pointer ${
+          isCurrent
+            ? 'bg-amber-500/15 border-amber-400 shadow-md'
+            : 'bg-slate-900/70 border-slate-700 hover:border-slate-500'
+        }`;
+
+        const optionsHtml = POSE_KEYS.map(k =>
+          `<option value="${k}" ${k === poseKey ? 'selected' : ''}>${POSES[k].name}</option>`
+        ).join('');
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-lg ${isCurrent ? 'bg-amber-500 text-slate-950' : 'bg-slate-700 text-slate-200'} font-black text-xs flex items-center justify-center">
+                ${index + 1}
+              </span>
+              <div>
+                <div class="text-xs text-slate-400">第 ${index * 4 + 1}～${(index + 1) * 4} 拍</div>
+                <div class="text-xs font-bold text-amber-300 mt-0.5">${pose.desc}</div>
+              </div>
             </div>
-        </section>
+            <select data-idx="${index}" class="pose-select bg-slate-800 border border-slate-600 text-white text-sm font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-400">
+              ${optionsHtml}
+            </select>
+          </div>
+        `;
 
-        <!-- 右側：四格動作序列輸入與教學指引 (佔 7 欄) -->
-        <section class="lg:col-span-7 flex flex-col gap-5">
-            
-            <!-- 引導說明卡 -->
-            <div class="bg-white rounded-3xl p-5 shadow-sm border border-indigo-50">
-                <h2 class="text-base sm:text-lg font-black text-slate-800 mb-1 flex items-center gap-2">
-                    <span>🎬</span> 步驟一：編排你們小組的「四連拍手位序列」
-                </h2>
-                <p class="text-xs sm:text-sm text-slate-600">
-                    請在下方 4 個格子中選擇想要的芭蕾手位，按下播放鍵跟著<strong>《胡桃鉗》士兵進行曲</strong>節拍練習（每 4 拍換一個動作，第 1 拍重音精準到位）！
-                </p>
-            </div>
-
-            <!-- 四個動作選擇卡 (2x2 網格) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="sequenceGrid">
-                <!-- 由 JavaScript 動態生成 4 張卡片 -->
-            </div>
-
-            <!-- 底部課堂觀察小秘訣（聚焦技術與視線） -->
-            <div class="bg-indigo-900 text-white rounded-3xl p-5 shadow-lg">
-                <div class="flex items-start gap-3">
-                    <div class="text-2xl mt-0.5">💡</div>
-                    <div>
-                        <h3 class="font-bold text-sm sm:text-base text-indigo-200 mb-1">課堂動作觀察重點：手位與視線配合</h3>
-                        <ul class="text-xs sm:text-sm text-indigo-100/90 space-y-1.5 list-disc list-inside">
-                            <li><strong>第三位置（3rd）：</strong>一手高舉、一手側開，頭看<strong>「旁手方向」</strong>。</li>
-                            <li><strong>第四位置（4th）：</strong>一手高舉、一手胃前，頭抬起看<strong>「上手方向」</strong>。</li>
-                            <li><strong>第五位置（5th）：</strong>雙手頭頂抱圓，視線微抬看雙手指尖方向。</li>
-                            <li><strong>合拍秘訣：</strong>在上一組動作的<strong>第 4 拍尾聲</strong>啟動過渡，<strong>第 1 拍重音</strong>準確到位定格！</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-        </section>
-    </main>
-
-    <!-- 頁尾教學標記 -->
-    <footer class="bg-white/80 backdrop-blur-sm border-t border-indigo-100 py-4 px-4 text-center text-xs sm:text-sm font-medium text-slate-600 mt-auto">
-        自主調節學習(NTSRL)胡桃鉗手位教材/新北市立中平國中 黃翊倫教師製作
-    </footer>
-
-    <!-- 綁定同資料夾的 march.mp3 實體音檔 -->
-    <audio id="bgMusic" src="march.mp3" preload="auto" loop></audio>
-
-    <script>
-        /**
-         * 芭蕾六大基本手位資料庫
-         * 包含：中文名稱、英文術語、雙手座標目標（相對於肩膀）、頭部偏轉角度、視線說明、動作要領
-         */
-        const POSITIONS = {
-            prep: {
-                id: 'prep',
-                name: '預備位置',
-                en: 'Bras bas',
-                shortDesc: '雙手垂於腹前抱圓，與大腿留一個半拳頭距離，手肘微彎不貼身',
-                headText: '👀 頭看：微低頭看前下方',
-                leftArm:  { elbowX: -0.42, elbowY: 0.55, handX: -0.10, handY: 0.92 },
-                rightArm: { elbowX:  0.42, elbowY: 0.55, handX:  0.10, handY: 0.92 },
-                head:     { yaw: 0, pitch: 0.25, lookTarget: { x: 0, y: 0.85 } }
-            },
-            first: {
-                id: 'first',
-                name: '第一位置',
-                en: '1st Position',
-                shortDesc: '雙手抬至胃部前方抱成飽滿橢圓，指尖相對留一拳微距',
-                headText: '👀 頭看：平視正前方',
-                leftArm:  { elbowX: -0.52, elbowY: 0.22, handX: -0.11, handY: 0.32 },
-                rightArm: { elbowX:  0.52, elbowY: 0.22, handX:  0.11, handY: 0.32 },
-                head:     { yaw: 0, pitch: 0, lookTarget: { x: 0, y: -0.25 } }
-            },
-            second: {
-                id: 'second',
-                name: '第二位置',
-                en: '2nd Position',
-                shortDesc: '雙臂向兩側展開，手肘微彎撐起弧線，手腕順流向下延伸',
-                headText: '👀 頭看：平視前方（可微轉側方）',
-                leftArm:  { elbowX: -0.55, elbowY: 0.05, handX: -1.05, handY: 0.14 },
-                rightArm: { elbowX:  0.55, elbowY: 0.05, handX:  1.05, handY: 0.14 },
-                head:     { yaw: 0.12, pitch: -0.05, lookTarget: { x: 0.25, y: -0.3 } }
-            },
-            third: {
-                id: 'third',
-                name: '第三位置',
-                en: '3rd Position',
-                shortDesc: '一手高舉過頭、一手向旁側展開，兩側手肘皆保持圓弧',
-                headText: '👀 頭看：轉向「旁手」方向',
-                leftArm:  { elbowX: -0.32, elbowY: -0.48, handX: -0.08, handY: -0.82 },
-                rightArm: { elbowX:  0.55, elbowY: 0.05,  handX:  1.05, handY: 0.14 },
-                head:     { yaw: 0.45, pitch: 0.02, lookTarget: { x: 1.05, y: 0.14 } }
-            },
-            fourth: {
-                id: 'fourth',
-                name: '第四位置',
-                en: '4th Position',
-                shortDesc: '一手高舉過頭、一手抱於胃部前方，沉肩不聳起',
-                headText: '👀 頭看：抬頭看「上手」方向',
-                leftArm:  { elbowX: -0.32, elbowY: -0.48, handX: -0.08, handY: -0.82 },
-                rightArm: { elbowX:  0.52, elbowY: 0.22,  handX:  0.11, handY: 0.32 },
-                head:     { yaw: -0.32, pitch: -0.35, lookTarget: { x: -0.08, y: -0.82 } }
-            },
-            fifth: {
-                id: 'fifth',
-                name: '第五位置',
-                en: '5th Position',
-                shortDesc: '雙臂高舉過頭頂成圓環，肩胛骨下沉、雙手位於額前上方',
-                headText: '👀 頭看：微抬頭看雙手指尖',
-                leftArm:  { elbowX: -0.34, elbowY: -0.46, handX: -0.09, handY: -0.82 },
-                rightArm: { elbowX:  0.34, elbowY: -0.46, handX:  0.09, handY: -0.82 },
-                head:     { yaw: 0, pitch: -0.32, lookTarget: { x: 0, y: -0.82 } }
-            }
-        };
-
-        // 預設的四個動作序列
-        let sequence = ['prep', 'first', 'third', 'fifth'];
-
-        // 動畫與節拍狀態（預設為暫停，方便學生按下播放鍵同時啟動瀏覽器音效）
-        let isPlaying = false;
-        let isMusicEnabled = true;
-        let playbackSpeed = 1.0;
-        let baseBpm = 132; // 預設對齊《胡桃鉗》進行曲（March）速度，可透過介面即時調節
-        let audioOffsetSec = 0.0; // 前奏延遲微調秒數
-        let useMp3File = true; // 優先使用同資料夾 march.mp3，失敗時自動降級為內建合成音
-        let currentStepIndex = 0; // 0 ~ 3
-        let stepProgress = 0.3;   // 預設停在第一個動作的標準位置
-        let lastTimestamp = 0;
-        let lastTriggeredSixteenth = -1;
-
-        const bgMusic = document.getElementById('bgMusic');
-        const audioSourceNotice = document.getElementById('audioSourceNotice');
-        const bpmInput = document.getElementById('bpmInput');
-        const offsetInput = document.getElementById('offsetInput');
-
-        // 偵測同資料夾 march.mp3 是否存在；若未放置則無縫切換為內建管弦合成器
-        bgMusic.addEventListener('error', () => {
-            useMp3File = false;
-            audioSourceNotice.textContent = '🎹 目前使用內建《胡桃鉗》進行曲合成音（放入 march.mp3 即可播真實交響樂）';
-            audioSourceNotice.className = 'text-[11px] text-center font-medium text-amber-700';
+        card.addEventListener('click', (e) => {
+          if (e.target.tagName === 'SELECT') return;
+          if (!isPlaying) {
+            activeSlot = index;
+            renderSlots();
+            drawDancer(POSES[sequence[activeSlot]], POSES[sequence[activeSlot]], 1);
+          }
         });
 
-        bgMusic.addEventListener('loadeddata', () => {
-            useMp3File = true;
-            audioSourceNotice.textContent = '🎵 已成功載入《胡桃鉗》進行曲原曲（march.mp3）';
-            audioSourceNotice.className = 'text-[11px] text-center font-medium text-emerald-700';
+        slotsContainer.appendChild(card);
+      });
+
+      document.querySelectorAll('.pose-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const idx = parseInt(e.target.dataset.idx, 10);
+          sequence[idx] = e.target.value;
+          activeSlot = idx;
+          renderSlots();
+          if (!isPlaying) {
+            drawDancer(POSES[sequence[activeSlot]], POSES[sequence[activeSlot]], 1);
+          }
         });
+      });
+    }
 
-        // ==========================================
-        // 《胡桃鉗》進行曲（March）管弦樂主題合成器（備援引擎）
-        // ==========================================
-        let audioCtx = null;
+    document.getElementById('randomBtn').addEventListener('click', () => {
+      sequence = Array.from({ length: 4 }, () => POSE_KEYS[Math.floor(Math.random() * POSE_KEYS.length)]);
+      activeSlot = 0;
+      renderSlots();
+      if (!isPlaying) {
+        drawDancer(POSES[sequence[0]], POSES[sequence[0]], 1);
+      }
+    });
 
-        // 音高頻率對照表 (對應音檔主題：G大調/降B大調管弦樂進行曲旋律線)
-        const NOTES = {
-            D3: 146.83, G3: 196.00, B3: 246.94, D4: 293.66, E4: 329.63, Fs4: 369.99,
-            G4: 392.00, A4: 440.00, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25, Fs5: 739.99, G5: 783.99
-        };
+    // 延遲秒數監聽
+    offsetInput.addEventListener('change', () => {
+      audioOffsetSec = Math.max(0, parseFloat(offsetInput.value) || 0);
+    });
 
-        /**
-         * 16 個十六分音符為 1 個小節（4 拍），共 4 小節（16 拍 = 4 個動作完整循環）
-         * 完整還原音檔中的小號號角主題 + 弦樂快速撥奏回應，第 1 拍重音與舞者動作切換完全鎖定！
-         */
-        const MARCH_MELODY_16TH = [
-            // 第 1 小節（第 1 動作：經典小號開場「登 登 登登登 登 登」）
-            { note: NOTES.G4, dur: 0.24, type: 'brass' }, null, null, null,
-            { note: NOTES.D4, dur: 0.24, type: 'brass' }, null, null, null,
-            { note: NOTES.G4, dur: 0.16, type: 'brass' }, null, { note: NOTES.G4, dur: 0.11, type: 'brass' }, { note: NOTES.A4, dur: 0.11, type: 'brass' },
-            { note: NOTES.B4, dur: 0.20, type: 'brass' }, null, { note: NOTES.G4, dur: 0.20, type: 'brass' }, null,
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
-            // 第 2 小節（第 2 動作：旋律上揚＋弦樂跳音呼應）
-            { note: NOTES.B4, dur: 0.24, type: 'brass' }, null, null, null,
-            { note: NOTES.G4, dur: 0.24, type: 'brass' }, null, null, null,
-            { note: NOTES.B4, dur: 0.16, type: 'brass' }, null, { note: NOTES.B4, dur: 0.11, type: 'brass' }, { note: NOTES.C5, dur: 0.11, type: 'brass' },
-            { note: NOTES.D5, dur: 0.20, type: 'brass' }, null, { note: NOTES.B4, dur: 0.20, type: 'brass' }, null,
+    // 繪製舞者與琥珀金視線方向光束
+    function drawDancer(fromPose, toPose, progress) {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || 520;
+      const h = rect.height || 420;
+      const t = easeOutCubic(Math.min(1, Math.max(0, progress)));
 
-            // 第 3 小節（第 3 動作：弦樂與木管輕快流動跳躍）
-            { note: NOTES.D5, dur: 0.18, type: 'strings' }, null, { note: NOTES.B4, dur: 0.16, type: 'strings' }, null,
-            { note: NOTES.G4, dur: 0.18, type: 'strings' }, null, { note: NOTES.B4, dur: 0.16, type: 'strings' }, null,
-            { note: NOTES.A4, dur: 0.16, type: 'strings' }, null, { note: NOTES.Fs4, dur: 0.16, type: 'strings' }, null,
-            { note: NOTES.D4, dur: 0.24, type: 'brass' }, null, null, null,
+      ctx.clearRect(0, 0, w, h);
 
-            // 第 4 小節（第 4 動作：堂堂正正凱旋收尾回主音）
-            { note: NOTES.G4, dur: 0.16, type: 'brass' }, null, { note: NOTES.A4, dur: 0.11, type: 'brass' }, { note: NOTES.B4, dur: 0.11, type: 'brass' },
-            { note: NOTES.C5, dur: 0.20, type: 'brass' }, null, { note: NOTES.A4, dur: 0.20, type: 'brass' }, null,
-            { note: NOTES.B4, dur: 0.20, type: 'brass' }, null, { note: NOTES.G4, dur: 0.20, type: 'brass' }, null,
-            { note: NOTES.G4, dur: 0.34, type: 'brass' }, null, null, null
-        ];
+      const cx = w / 2;
+      const shoulderY = h * 0.41;
 
-        function initAudioContext() {
-            if (!audioCtx) {
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContextClass();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+      // 舞台地板線
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx - 170, shoulderY + 215);
+      ctx.lineTo(cx + 170, shoulderY + 215);
+      ctx.stroke();
+
+      const lElbow = [lerp(fromPose.leftElbow[0], toPose.leftElbow[0], t), lerp(fromPose.leftElbow[1], toPose.leftElbow[1], t)];
+      const lWrist = [lerp(fromPose.leftWrist[0], toPose.leftWrist[0], t), lerp(fromPose.leftWrist[1], toPose.leftWrist[1], t)];
+      const rElbow = [lerp(fromPose.rightElbow[0], toPose.rightElbow[0], t), lerp(fromPose.rightElbow[1], toPose.rightElbow[1], t)];
+      const rWrist = [lerp(fromPose.rightWrist[0], toPose.rightWrist[0], t), lerp(fromPose.rightWrist[1], toPose.rightWrist[1], t)];
+      const headTurn = lerp(fromPose.headTurn, toPose.headTurn, t);
+      const headTilt = lerp(fromPose.headTilt, toPose.headTilt, t);
+      const gazeTarget = [lerp(fromPose.gazeTarget[0], toPose.gazeTarget[0], t), lerp(fromPose.gazeTarget[1], toPose.gazeTarget[1], t)];
+
+      // 下半身（芭蕾一位腳站姿）
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 10;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - 14, shoulderY + 90);
+      ctx.lineTo(cx - 22, shoulderY + 208);
+      ctx.lineTo(cx - 42, shoulderY + 212);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(cx + 14, shoulderY + 90);
+      ctx.lineTo(cx + 22, shoulderY + 208);
+      ctx.lineTo(cx + 42, shoulderY + 212);
+      ctx.stroke();
+
+      // 軀幹（芭蕾舞衣）
+      ctx.fillStyle = '#334155';
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - 32, shoulderY);
+      ctx.lineTo(cx + 32, shoulderY);
+      ctx.lineTo(cx + 20, shoulderY + 90);
+      ctx.lineTo(cx - 20, shoulderY + 90);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // 繪製雙臂弧線
+      function drawArm(shoulderX, elbow, wrist) {
+        ctx.strokeStyle = '#f8fafc';
+        ctx.lineWidth = 9;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(shoulderX, shoulderY + 4);
+        ctx.quadraticCurveTo(cx + elbow[0], shoulderY + elbow[1], cx + wrist[0], shoulderY + wrist[1]);
+        ctx.stroke();
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(cx + wrist[0], shoulderY + wrist[1], 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      drawArm(cx - 30, lElbow, lWrist);
+      drawArm(cx + 30, rElbow, rWrist);
+
+      // 頭部與脖子
+      const headX = cx + headTurn * 10;
+      const headY = shoulderY - 38 + headTilt * 12;
+
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(cx, shoulderY);
+      ctx.lineTo(headX, headY + 18);
+      ctx.stroke();
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.arc(headX, headY, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      const eyeCenterX = headX + headTurn * 14;
+      const eyeCenterY = headY + headTilt * 14;
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(eyeCenterX - 6, eyeCenterY, 2.6, 0, Math.PI * 2);
+      ctx.arc(eyeCenterX + 6, eyeCenterY, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 琥珀金視線光束
+      ctx.save();
+      ctx.setLineDash([6, 6]);
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.85)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(eyeCenterX, eyeCenterY);
+      ctx.lineTo(cx + gazeTarget[0], shoulderY + gazeTarget[1]);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.95)';
+      ctx.beginPath();
+      ctx.arc(cx + gazeTarget[0], shoulderY + gazeTarget[1], 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      gazeLabel.textContent = `👁️ ${toPose.gazeText}`;
+      currentPoseBadge.textContent = `動作 ${activeSlot + 1}：${toPose.name}`;
+    }
+
+    function updateBeatLights(beat) {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`beat-${i}`);
+        if (i === beat) {
+          el.className = i === 1
+            ? 'w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center font-black text-sm beat-active transition-all'
+            : 'w-8 h-8 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm beat-active transition-all';
+        } else {
+          el.className = 'w-8 h-8 rounded-full bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-sm transition-all';
         }
-
-        /**
-         * 播放進行曲管弦樂聲部（小號主奏＋弦樂撥奏＋定音鼓重拍）
-         */
-        function playMarchStepSound(globalSixteenth) {
-            if (!isMusicEnabled || !audioCtx) return;
-
-            const now = audioCtx.currentTime;
-            const stepInBeat = globalSixteenth % 4; // 0 代表每拍正拍
-
-            // 1. 播放小號/弦樂主旋律
-            const melodyEvent = MARCH_MELODY_16TH[globalSixteenth % 64];
-            if (melodyEvent) {
-                const osc = audioCtx.createOscillator();
-                const filter = audioCtx.createBiquadFilter();
-                const gain = audioCtx.createGain();
-
-                // 區分銅管號角（飽滿）與弦樂撥奏（清脆）
-                osc.type = melodyEvent.type === 'brass' ? 'sawtooth' : 'triangle';
-                osc.frequency.setValueAtTime(melodyEvent.note, now);
-
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(melodyEvent.type === 'brass' ? 1650 : 2400, now);
-
-                const duration = melodyEvent.dur / playbackSpeed;
-                const peakVol = melodyEvent.type === 'brass' ? 0.16 : 0.22;
-                gain.gain.setValueAtTime(0.001, now);
-                gain.gain.linearRampToValueAtTime(peakVol, now + 0.012);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.start(now);
-                osc.stop(now + duration + 0.02);
-            }
-
-            // 2. 每拍正拍加入定音鼓與低音弦樂步點（第 1 拍為動作切換重音）
-            if (stepInBeat === 0) {
-                const beatInBar = Math.floor((globalSixteenth % 16) / 4); // 0, 1, 2, 3
-                const bassOsc = audioCtx.createOscillator();
-                const bassGain = audioCtx.createGain();
-
-                bassOsc.type = 'sine';
-                // 第 1 拍定音鼓重音（G3->G2 落點），幫助學生精準踩中每個動作的第 1 拍
-                const bassFreq = beatInBar === 0 ? 196.00 : (beatInBar === 2 ? 146.83 : 110.00);
-                bassOsc.frequency.setValueAtTime(bassFreq, now);
-                bassOsc.frequency.exponentialRampToValueAtTime(55, now + 0.13);
-
-                const vol = beatInBar === 0 ? 0.30 : 0.15;
-                bassGain.gain.setValueAtTime(vol, now);
-                bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
-
-                bassOsc.connect(bassGain);
-                bassGain.connect(audioCtx.destination);
-
-                bassOsc.start(now);
-                bassOsc.stop(now + 0.15);
-            }
-        }
-
-        /**
-         * 播放進行曲小號主旋律音符與軍鼓節拍
-         */
-        function playMarchStepSound(globalSixteenth) {
-            if (!isMusicEnabled || !audioCtx) return;
-
-            const now = audioCtx.currentTime;
-            const stepInBeat = globalSixteenth % 4; // 0 代表每拍正拍
-
-            // 1. 播放小號主旋律
-            const melodyEvent = MARCH_MELODY_16TH[globalSixteenth % 64];
-            if (melodyEvent) {
-                const osc = audioCtx.createOscillator();
-                const filter = audioCtx.createBiquadFilter();
-                const gain = audioCtx.createGain();
-
-                // 使用三角波＋低通濾波模擬明亮清脆的小號/木管音色
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(melodyEvent.note, now);
-
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(1800, now);
-
-                const duration = melodyEvent.dur / playbackSpeed;
-                gain.gain.setValueAtTime(0.001, now);
-                gain.gain.linearRampToValueAtTime(0.24, now + 0.015);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-                osc.connect(filter);
-                filter.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.start(now);
-                osc.stop(now + duration + 0.02);
-            }
-
-            // 2. 每拍正拍加入進行曲低音步點（第 1 拍為動作切換重音）
-            if (stepInBeat === 0) {
-                const beatInBar = Math.floor((globalSixteenth % 16) / 4); // 0, 1, 2, 3
-                const bassOsc = audioCtx.createOscillator();
-                const bassGain = audioCtx.createGain();
-
-                bassOsc.type = 'sine';
-                // 第 1 拍重音音高略高，幫助學生聽出「換動作的重拍」
-                const bassFreq = beatInBar === 0 ? 146.83 : (beatInBar === 2 ? 130.81 : 98.00);
-                bassOsc.frequency.setValueAtTime(bassFreq, now);
-                bassOsc.frequency.exponentialRampToValueAtTime(55, now + 0.14);
-
-                const vol = beatInBar === 0 ? 0.28 : 0.15;
-                bassGain.gain.setValueAtTime(vol, now);
-                bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-
-                bassOsc.connect(bassGain);
-                bassGain.connect(audioCtx.destination);
-
-                bassOsc.start(now);
-                bassOsc.stop(now + 0.16);
-            }
-        }
-
-        // DOM 元素參照
-        const sequenceGrid = document.getElementById('sequenceGrid');
-        const canvas = document.getElementById('dancerCanvas');
-        const ctx = canvas.getContext('2d');
-        const canvasContainer = document.getElementById('canvasContainer');
-
-        // 狀態顯示 UI
-        const stageStepBadge = document.getElementById('stageStepBadge');
-        const beatNumberText = document.getElementById('beatNumberText');
-        const overlayPosTitle = document.getElementById('overlayPosTitle');
-        const overlayHeadDir = document.getElementById('overlayHeadDir');
-        const overlayDesc = document.getElementById('overlayDesc');
-        const beatDots = document.getElementById('beatDots').children;
-
-        /**
-         * 初始化四格動作選擇卡片
-         */
-        function renderSequenceCards() {
-            sequenceGrid.innerHTML = '';
-            const posKeys = Object.keys(POSITIONS);
-
-            sequence.forEach((selectedKey, index) => {
-                const posData = POSITIONS[selectedKey];
-                const card = document.createElement('div');
-                card.id = `step-card-${index}`;
-                card.className = `step-card bg-white/90 rounded-2xl p-4 border-2 border-slate-200/80 flex flex-col justify-between cursor-pointer`;
-                
-                // 點擊卡片可直接跳轉預覽該動作
-                card.addEventListener('click', (e) => {
-                    if (e.target.tagName !== 'SELECT') {
-                        currentStepIndex = index;
-                        stepProgress = 0.25; // 跳到該動作已擺好的定格瞬間
-                        updateUIState();
-                    }
-                });
-
-                // 組合下拉選單 HTML
-                const optionsHtml = posKeys.map(key => {
-                    const p = POSITIONS[key];
-                    return `<option value="${key}" ${key === selectedKey ? 'selected' : ''}>${p.name} (${p.en})</option>`;
-                }).join('');
-
-                card.innerHTML = `
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
-                                第 ${index + 1} 動作（4拍）
-                            </span>
-                            <span class="text-xs font-medium text-slate-400">點卡片可單獨定格</span>
-                        </div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">選擇手部位置：</label>
-                        <select data-index="${index}" class="pos-select w-full p-2.5 rounded-xl border border-slate-300 bg-slate-50 font-bold text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                            ${optionsHtml}
-                        </select>
-                    </div>
-                    <div class="mt-3 pt-2.5 border-t border-slate-100">
-                        <div class="text-xs font-bold text-amber-700">${posData.headText}</div>
-                    </div>
-                `;
-                sequenceGrid.appendChild(card);
-            });
-
-            // 綁定下拉選單變更事件
-            document.querySelectorAll('.pos-select').forEach(select => {
-                select.addEventListener('change', (e) => {
-                    const idx = parseInt(e.target.dataset.index, 10);
-                    sequence[idx] = e.target.value;
-                    renderSequenceCards();
-                    // 切換時立刻預覽該格動作
-                    currentStepIndex = idx;
-                    stepProgress = 0.3;
-                    updateUIState();
-                });
-            });
-
-            updateUIState();
-        }
-
-        /**
-         * 更新高亮卡片與舞台說明文字
-         */
-        function updateUIState() {
-            const activeKey = sequence[currentStepIndex];
-            const pos = POSITIONS[activeKey];
-
-            // 更新四張卡片的高亮狀態
-            for (let i = 0; i < 4; i++) {
-                const el = document.getElementById(`step-card-${i}`);
-                if (el) {
-                    if (i === currentStepIndex) {
-                        el.classList.add('active');
-                    } else {
-                        el.classList.remove('active');
-                    }
-                }
-            }
-
-            // 更新舞台資訊
-            stageStepBadge.textContent = `第 ${currentStepIndex + 1} 動作 / 共 4 動作`;
-            overlayPosTitle.textContent = `${pos.name} (${pos.en})`;
-            overlayHeadDir.textContent = pos.headText;
-            overlayDesc.textContent = pos.shortDesc;
-
-            // 更新 4 拍節拍燈號與拍數顯示
-            const currentBeat = Math.min(3, Math.floor(stepProgress * 4));
-            beatNumberText.textContent = `第 ${currentBeat + 1} 拍${currentBeat === 0 ? '（重拍到位）' : ''}`;
-            for (let b = 0; b < 4; b++) {
-                if (b === currentBeat) {
-                    beatDots[b].className = b === 0
-                        ? 'w-3.5 h-3.5 rounded-full bg-rose-500 scale-125 transition-all'
-                        : 'w-3 h-3 rounded-full bg-indigo-600 scale-110 transition-all';
-                } else if (b < currentBeat) {
-                    beatDots[b].className = 'w-2.5 h-2.5 rounded-full bg-indigo-300 transition-all';
-                } else {
-                    beatDots[b].className = 'w-2.5 h-2.5 rounded-full bg-slate-200 transition-all';
-                }
-            }
-        }
-
-        /**
-         * 數學輔助：三次緩動函數 (EaseInOutCubic)
-         */
-        function easeInOutCubic(t) {
-            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-        }
-
-        /**
-         * 線性插值輔助
-         */
-        function lerp(a, b, t) {
-            return a + (b - a) * t;
-        }
-
-        /**
-         * 響應式調整 Canvas 解析度
-         */
-        function resizeCanvas() {
-            const rect = canvasContainer.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-
-        /**
-         * 核心繪圖函數：繪製抽象手繪風芭蕾舞者與頭向視線指引
-         * 合拍設計：前 18% 時間（約半拍）俐落完成過渡，第 1 拍重音瞬間準確到位並穩定定格
-         */
-        function drawDancer() {
-            const rect = canvasContainer.getBoundingClientRect();
-            const w = rect.width;
-            const h = rect.height;
-
-            ctx.clearRect(0, 0, w, h);
-
-            const prevIndex = (currentStepIndex + 3) % 4;
-            const prevPos = POSITIONS[sequence[prevIndex]];
-            const currPos = POSITIONS[sequence[currentStepIndex]];
-
-            const transitionDuration = 0.18;
-            const rawT = Math.min(1, stepProgress / transitionDuration);
-            const t = easeInOutCubic(rawT);
-
-            // 插值計算雙手與頭部狀態
-            const lArm = {
-                elbowX: lerp(prevPos.leftArm.elbowX, currPos.leftArm.elbowX, t),
-                elbowY: lerp(prevPos.leftArm.elbowY, currPos.leftArm.elbowY, t),
-                handX:  lerp(prevPos.leftArm.handX,  currPos.leftArm.handX,  t),
-                handY:  lerp(prevPos.leftArm.handY,  currPos.leftArm.handY,  t),
-            };
-            const rArm = {
-                elbowX: lerp(prevPos.rightArm.elbowX, currPos.rightArm.elbowX, t),
-                elbowY: lerp(prevPos.rightArm.elbowY, currPos.rightArm.elbowY, t),
-                handX:  lerp(prevPos.rightArm.handX,  currPos.rightArm.handX,  t),
-                handY:  lerp(prevPos.rightArm.handY,  currPos.rightArm.handY,  t),
-            };
-            const headState = {
-                yaw:   lerp(prevPos.head.yaw,   currPos.head.yaw,   t),
-                pitch: lerp(prevPos.head.pitch, currPos.head.pitch, t),
-                lookX: lerp(prevPos.head.lookTarget.x, currPos.head.lookTarget.x, t),
-                lookY: lerp(prevPos.head.lookTarget.y, currPos.head.lookTarget.y, t),
-            };
-
-            const centerX = w * 0.5;
-            const shoulderY = h * 0.34;
-            const scale = Math.min(w * 0.32, h * 0.25);
-
-            // 1. 繪製背景水墨氛圍光暈（第 1 拍重音瞬間微亮提示節拍）
-            const isDownbeat = stepProgress < 0.15;
-            const grad = ctx.createRadialGradient(centerX, shoulderY + scale * 0.2, 10, centerX, shoulderY + scale * 0.2, scale * 1.6);
-            grad.addColorStop(0, isDownbeat ? 'rgba(244, 63, 94, 0.16)' : 'rgba(99, 102, 241, 0.12)');
-            grad.addColorStop(0.6, 'rgba(148, 163, 184, 0.06)');
-            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(centerX, shoulderY + scale * 0.2, scale * 1.6, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 繪製地板基準線
-            const footY = shoulderY + scale * 1.72;
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(centerX - scale * 0.9, footY);
-            ctx.lineTo(centerX + scale * 0.9, footY);
-            ctx.stroke();
-
-            // 2. 繪製下肢與軀幹（芭蕾一位腳站姿）
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            const hipY = shoulderY + scale * 0.68;
-            ctx.strokeStyle = '#334155';
-            ctx.lineWidth = 7;
-            ctx.beginPath();
-            ctx.moveTo(centerX - scale * 0.11, hipY);
-            ctx.quadraticCurveTo(centerX - scale * 0.14, hipY + scale * 0.5, centerX - scale * 0.04, footY - 4);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(centerX + scale * 0.11, hipY);
-            ctx.quadraticCurveTo(centerX + scale * 0.14, hipY + scale * 0.5, centerX + scale * 0.04, footY - 4);
-            ctx.stroke();
-
-            // 芭蕾舞鞋（一位腳 V 字外開）
-            ctx.fillStyle = '#1e293b';
-            ctx.beginPath();
-            ctx.ellipse(centerX - scale * 0.12, footY - 3, 14, 5, -0.25, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(centerX + scale * 0.12, footY - 3, 14, 5, 0.25, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 軀幹
-            ctx.fillStyle = '#1e293b';
-            ctx.beginPath();
-            ctx.moveTo(centerX - scale * 0.22, shoulderY);
-            ctx.lineTo(centerX + scale * 0.22, shoulderY);
-            ctx.quadraticCurveTo(centerX + scale * 0.14, shoulderY + scale * 0.36, centerX + scale * 0.18, hipY);
-            ctx.lineTo(centerX, hipY + scale * 0.1);
-            ctx.lineTo(centerX - scale * 0.18, hipY);
-            ctx.quadraticCurveTo(centerX - scale * 0.14, shoulderY + scale * 0.36, centerX - scale * 0.22, shoulderY);
-            ctx.closePath();
-            ctx.fill();
-
-            // 3. 繪製頸部與頭部（含轉頭與仰俯角度）
-            const neckTopY = shoulderY - scale * 0.16;
-            ctx.strokeStyle = '#334155';
-            ctx.lineWidth = 7;
-            ctx.beginPath();
-            ctx.moveTo(centerX, shoulderY);
-            ctx.lineTo(centerX + headState.yaw * 6, neckTopY);
-            ctx.stroke();
-
-            const headCenterX = centerX + headState.yaw * 10;
-            const headCenterY = neckTopY - scale * 0.15 + headState.pitch * 8;
-            const headRadiusX = scale * 0.14;
-            const headRadiusY = scale * 0.17;
-
-            // 芭蕾髮髻
-            ctx.fillStyle = '#0f172a';
-            ctx.beginPath();
-            ctx.arc(headCenterX - headState.yaw * 14, headCenterY - headRadiusY * 0.85, scale * 0.075, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 頭部輪廓
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#1e293b';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.ellipse(headCenterX, headCenterY, headRadiusX, headRadiusY, headState.yaw * 0.2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // 臉部五官方向指示
-            const faceOffsetX = headState.yaw * (headRadiusX * 0.65);
-            const faceOffsetY = headState.pitch * (headRadiusY * 0.55);
-            const eyeY = headCenterY - 2 + faceOffsetY;
-
-            ctx.fillStyle = '#1e293b';
-            ctx.beginPath();
-            ctx.arc(headCenterX - 5 + faceOffsetX, eyeY, 2, 0, Math.PI * 2);
-            ctx.arc(headCenterX + 5 + faceOffsetX, eyeY, 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // 4. 繪製視線光束指引線
-            const eyeOriginX = headCenterX + faceOffsetX;
-            const eyeOriginY = eyeY;
-            const targetScreenX = centerX + headState.lookX * scale;
-            const targetScreenY = shoulderY + headState.lookY * scale;
-
-            ctx.save();
-            ctx.setLineDash([5, 5]);
-            ctx.strokeStyle = '#d97706';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(eyeOriginX, eyeOriginY);
-            ctx.lineTo(targetScreenX, targetScreenY);
-            ctx.stroke();
-
-            ctx.setLineDash([]);
-            ctx.fillStyle = 'rgba(245, 158, 11, 0.25)';
-            ctx.beginPath();
-            ctx.arc(targetScreenX, targetScreenY, 10, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#d97706';
-            ctx.beginPath();
-            ctx.arc(targetScreenX, targetScreenY, 3.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-
-            // 5. 繪製雙臂優美弧線
-            drawArm(
-                centerX - scale * 0.21, shoulderY + 4,
-                centerX + lArm.elbowX * scale, shoulderY + lArm.elbowY * scale,
-                centerX + lArm.handX * scale, shoulderY + lArm.handY * scale
-            );
-            drawArm(
-                centerX + scale * 0.21, shoulderY + 4,
-                centerX + rArm.elbowX * scale, shoulderY + rArm.elbowY * scale,
-                centerX + rArm.handX * scale, shoulderY + rArm.handY * scale
-            );
-        }
-
-        /**
-         * 繪製單側芭蕾手臂
-         */
-        function drawArm(sx, sy, ex, ey, hx, hy) {
-            ctx.strokeStyle = 'rgba(79, 70, 229, 0.18)';
-            ctx.lineWidth = 11;
-            ctx.beginPath();
-            ctx.moveTo(sx, sy);
-            ctx.quadraticCurveTo(ex, ey, hx, hy);
-            ctx.stroke();
-
-            ctx.strokeStyle = '#1e293b';
-            ctx.lineWidth = 5.5;
-            ctx.beginPath();
-            ctx.moveTo(sx, sy);
-            ctx.quadraticCurveTo(ex, ey, hx, hy);
-            ctx.stroke();
-
-            const angle = Math.atan2(hy - ey, hx - ex);
-            ctx.strokeStyle = '#4f46e5';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.moveTo(hx, hy);
-            ctx.lineTo(hx + Math.cos(angle + 0.12) * 14, hy + Math.sin(angle + 0.12) * 14);
-            ctx.stroke();
-        }
-
-        /**
-         * 主動畫迴圈（支援 march.mp3 實體時間軸鎖定 ＋ BPM/倍速即時調節）
-         */
-        function animate(timestamp) {
-            if (!lastTimestamp) lastTimestamp = timestamp;
-            const deltaSec = (timestamp - lastTimestamp) / 1000;
-            lastTimestamp = timestamp;
-
-            if (isPlaying) {
-                const effectiveBpm = baseBpm * playbackSpeed;
-                const secPerBeat = 60 / effectiveBpm;
-                const stepDuration = secPerBeat * 4;
-                const prevBeat = Math.floor(stepProgress * 4);
-
-                if (useMp3File && !bgMusic.paused) {
-                    // 依據 march.mp3 實際播放時間計算精準節拍位置
-                    const elapsed = Math.max(0, bgMusic.currentTime - audioOffsetSec);
-                    const totalSteps = elapsed / stepDuration;
-                    currentStepIndex = Math.floor(totalSteps) % 4;
-                    stepProgress = totalSteps % 1;
-                } else {
-                    // 內建合成器時間軸推進
-                    stepProgress += deltaSec / stepDuration;
-                    if (stepProgress >= 1) {
-                        stepProgress %= 1;
-                        currentStepIndex = (currentStepIndex + 1) % 4;
-                    }
-
-                    const totalCycleProgress = (currentStepIndex + stepProgress) / 4;
-                    const currentSixteenth = Math.floor(totalCycleProgress * 64) % 64;
-
-                    if (currentSixteenth !== lastTriggeredSixteenth) {
-                        playMarchStepSound(currentSixteenth);
-                        lastTriggeredSixteenth = currentSixteenth;
-                    }
-                }
-
-                const newBeat = Math.floor(stepProgress * 4);
-                if (newBeat !== prevBeat) {
-                    updateUIState();
-                }
-            }
-
-            drawDancer();
-            requestAnimationFrame(animate);
-        }
-
-        // 播放／暫停按鈕事件（同步控制 march.mp3 與內建音效）
-        const btnPlayPause = document.getElementById('btnPlayPause');
-        const playIcon = document.getElementById('playIcon');
-        const playText = document.getElementById('playText');
-
-        btnPlayPause.addEventListener('click', () => {
-            isPlaying = !isPlaying;
-            if (isPlaying) {
-                if (useMp3File) {
-                    bgMusic.playbackRate = playbackSpeed;
-                    bgMusic.muted = !isMusicEnabled;
-                    bgMusic.play().catch(() => {
-                        // 若瀏覽器阻擋自動播放或找不到檔案，切換至內建合成器
-                        useMp3File = false;
-                        initAudioContext();
-                    });
-                } else {
-                    initAudioContext();
-                    stepProgress = 0;
-                    lastTriggeredSixteenth = -1;
-                }
-                updateUIState();
-            } else {
-                if (useMp3File) {
-                    bgMusic.pause();
-                }
-            }
-            playIcon.textContent = isPlaying ? '⏸️' : '▶️';
-            playText.textContent = isPlaying ? '暫停串聯播放' : '繼續合拍播放';
+      }
+    }
+
+    function loop(timestamp) {
+      if (!isPlaying) return;
+
+      const effectiveBpm = baseBpm * playbackSpeed;
+      const secPerBeat = 60 / effectiveBpm;
+
+      let elapsed = 0;
+      if (!useFallbackSynth && !bgMusic.paused) {
+        elapsed = Math.max(0, bgMusic.currentTime - audioOffsetSec);
+      } else {
+        elapsed = pausedElapsed + (timestamp - manualTimerStart) / 1000;
+      }
+
+      const totalBeats = elapsed / secPerBeat;
+      const globalBeatIdx = Math.floor(totalBeats);
+      const beatInBar = (globalBeatIdx % 4) + 1;
+      const slotIdx = Math.floor(totalBeats / 4) % 4;
+      const prevSlotIdx = (slotIdx + 3) % 4;
+
+      const beatProgressInSlot = totalBeats % 4;
+      const transitionProgress = Math.min(1, beatProgressInSlot / 0.45);
+
+      if (useFallbackSynth && globalBeatIdx !== lastSynthBeatIndex) {
+        lastSynthBeatIndex = globalBeatIdx;
+        playSynthBeat(beatInBar);
+      }
+
+      if (slotIdx !== activeSlot) {
+        activeSlot = slotIdx;
+        renderSlots();
+      }
+      if (beatInBar !== currentBeat) {
+        currentBeat = beatInBar;
+        updateBeatLights(currentBeat);
+      }
+
+      drawDancer(POSES[sequence[prevSlotIdx]], POSES[sequence[slotIdx]], transitionProgress);
+      animFrameId = requestAnimationFrame(loop);
+    }
+
+    function startPlayback() {
+      if (isPlaying) return;
+      isPlaying = true;
+      playBtn.innerHTML = '<span>⏸ 暫停播放</span>';
+      manualTimerStart = performance.now();
+      bpmInput.value = 150;
+
+      if (!useFallbackSynth) {
+        bgMusic.playbackRate = playbackSpeed;
+        bgMusic.play().catch(() => {
+          useFallbackSynth = true;
+          musicStatusBadge.textContent = '🎹 備援節拍音效模式（自動切換）';
         });
+      }
+      animFrameId = requestAnimationFrame(loop);
+    }
 
-        // 停止歸零按鈕
-        document.getElementById('btnStopReset').addEventListener('click', () => {
-            isPlaying = false;
-            if (useMp3File) {
-                bgMusic.pause();
-                bgMusic.currentTime = 0;
-            }
-            currentStepIndex = 0;
-            stepProgress = 0.25;
-            lastTriggeredSixteenth = -1;
-            playIcon.textContent = '▶️';
-            playText.textContent = '開始合拍播放（進行曲）';
-            updateUIState();
-        });
+    function stopPlayback() {
+      isPlaying = false;
+      playBtn.innerHTML = '<span>▶ 開始合拍播放</span>';
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      if (!useFallbackSynth) {
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+      }
+      pausedElapsed = 0;
+      lastSynthBeatIndex = -1;
+      activeSlot = 0;
+      currentBeat = 1;
+      updateBeatLights(0);
+      renderSlots();
+      drawDancer(POSES[sequence[0]], POSES[sequence[0]], 1);
+    }
 
-        // 進行曲音樂開關按鈕
-        const btnMusicToggle = document.getElementById('btnMusicToggle');
-        btnMusicToggle.addEventListener('click', () => {
-            isMusicEnabled = !isMusicEnabled;
-            if (useMp3File) {
-                bgMusic.muted = !isMusicEnabled;
-            } else {
-                initAudioContext();
-            }
-            btnMusicToggle.textContent = isMusicEnabled ? '🔊 進行曲音樂：開' : '🔇 進行曲音樂：靜音';
-            btnMusicToggle.className = isMusicEnabled
-                ? 'px-3 py-2 text-xs sm:text-sm font-bold rounded-xl bg-emerald-100 text-emerald-800 hover:bg-emerald-200 active:scale-95 transition flex items-center gap-1'
-                : 'px-3 py-2 text-xs sm:text-sm font-bold rounded-xl bg-slate-200 text-slate-600 hover:bg-slate-300 active:scale-95 transition flex items-center gap-1';
-        });
+    playBtn.addEventListener('click', () => {
+      if (isPlaying) {
+        isPlaying = false;
+        pausedElapsed += (performance.now() - manualTimerStart) / 1000;
+        playBtn.innerHTML = '<span>▶ 繼續播放</span>';
+        if (!useFallbackSynth) bgMusic.pause();
+      } else {
+        startPlayback();
+      }
+    });
 
-        // 播放速度倍速切換（同步調整 march.mp3 語速與動畫節拍）
-        document.querySelectorAll('.speed-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                playbackSpeed = parseFloat(e.target.dataset.speed);
-                if (useMp3File) {
-                    bgMusic.playbackRate = playbackSpeed;
-                }
-                document.querySelectorAll('.speed-btn').forEach(b => {
-                    b.className = 'speed-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 transition';
-                });
-                e.target.className = 'speed-btn px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white text-indigo-700 shadow-sm transition';
-            });
-        });
+    stopBtn.addEventListener('click', stopPlayback);
 
-        // BPM 數值即時調節
-        bpmInput.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            if (!isNaN(val) && val >= 40 && val <= 240) {
-                baseBpm = val;
-            }
-        });
-
-        // 前奏延遲秒數即時調節
-        offsetInput.addEventListener('input', (e) => {
-            const val = parseFloat(e.target.value);
-            if (!isNaN(val) && val >= 0) {
-                audioOffsetSec = val;
-            }
-        });
-
-        // 隨機抽籤編舞按鈕
-        document.getElementById('btnRandom').addEventListener('click', () => {
-            const keys = Object.keys(POSITIONS);
-            sequence = [0, 1, 2, 3].map(() => keys[Math.floor(Math.random() * keys.length)]);
-            currentStepIndex = 0;
-            stepProgress = 0;
-            lastTriggeredSixteenth = -1;
-            renderSequenceCards();
-        });
-
-        // 克拉拉示範序列（預備 -> 第一 -> 第四 -> 第五）
-        document.getElementById('btnPresetNutcracker').addEventListener('click', () => {
-            sequence = ['prep', 'first', 'fourth', 'fifth'];
-            currentStepIndex = 0;
-            stepProgress = 0;
-            lastTriggeredSixteenth = -1;
-            renderSequenceCards();
-        });
-
-        // 視窗尺寸監聽與啟動
-        window.addEventListener('resize', resizeCanvas);
-        window.onload = function() {
-            resizeCanvas();
-            renderSequenceCards();
-            requestAnimationFrame(animate);
-        };
-    </script>
+    // 初始化
+    bpmInput.value = 150;
+    renderSlots();
+    resizeCanvas();
+  </script>
 </body>
 </html>
